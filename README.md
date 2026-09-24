@@ -1,12 +1,15 @@
-# Applications Search
+# Recruiter Application Search System
 
-> Live demo: **https://YOUR-VERCEL-URL.vercel.app** _(replace after deploy)_
-> Submission folder (Google Drive, viewer-access): **https://drive.google.com/drive/folders/PASTE_ID_HERE** _(share before submitting)_
-> Walkthrough video: `walkthrough.mp4` _(also in the Drive folder)_
+> **Live demo:** _Vercel URL goes here after `vercel --prod` (see Phase 4 below)_
+> **Source repo:** https://github.com/raiyanibnekamal/recruiter-application-search-system
+> **Submission folder (Google Drive, viewer-access):** _paste link after upload — see Phase 8 below_
+> **Walkthrough video:** _paste YouTube/Drive link or `walkthrough.mp4` filename after recording — see Phase 7 below_
 
 A recruiter-grade search UI over a Supabase/Postgres `applications` table,
 with weighted full-text search, trigram fallback, RLS-gated rows,
 debounced input, and every UI state a hiring tool should have.
+
+**Stack:** Next.js 14 (App Router) · TypeScript · Tailwind CSS · Supabase (Postgres + Auth + RLS) · `@supabase/ssr` · Vercel.
 
 ---
 
@@ -181,11 +184,31 @@ curl "$NEXT_PUBLIC_SUPABASE_URL/rest/v1/applications?select=*" \
 
 ### Deploy to Vercel
 
+This repo is already on GitHub: https://github.com/raiyanibnekamal/recruiter-application-search-system
+
+**Option A — GitHub integration (recommended):**
+1. Visit https://vercel.com/new → Import `raiyanibnekamal/recruiter-application-search-system`
+2. Add the three env vars below in **Settings → Environment Variables**
+3. **Deploy**
+
+**Option B — CLI:**
 ```bash
-vercel                 # first run, link to your Vercel project
-vercel --prod          # production deploy
-# then add the two NEXT_PUBLIC_SUPABASE_* env vars in the Vercel UI
+npm install -g vercel
+vercel login
+vercel --prod
+# then add env vars in Vercel dashboard → Settings → Environment Variables
 ```
+
+**Required env vars (all three, for Production / Preview / Development):**
+```
+NEXT_PUBLIC_SUPABASE_URL   = https://thxvpmmyateyqlnycalz.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY = <your-anon-key>
+NEXT_PUBLIC_SITE_URL       = https://<your-app>.vercel.app
+```
+
+After the first deploy succeeds, also add the prod URL to your Supabase allowlist:
+👉 Supabase Dashboard → Authentication → URL Configuration → Redirect URLs:
+add `https://<your-app>.vercel.app/**`
 
 ### Submit to Google Drive
 
