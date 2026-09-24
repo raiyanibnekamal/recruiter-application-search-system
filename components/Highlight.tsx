@@ -2,9 +2,13 @@
 
 // Highlight.tsx
 // Client-side <mark> wrapping, driven by a SAFE query string. We do NOT
-// use dangerouslySetInnerHTML for the server's ts_headline output; that
-// could ship attacker-controlled fragments. Instead we tokenize the
-// query, escape everything, and build React nodes.
+// use dangerouslySetInnerHTML for the server's ts_headline output
+// without first passing it through sanitizeHeadline().
+//
+// sanitizeHeadline allows ONLY <mark>/</mark> through — everything else
+// (other tags, attributes, javascript: URLs, broken unicode, control
+// chars) is escaped or stripped. This is the canonical XSS wall between
+// the Postgres ts_headline output and the DOM.
 
 import { Fragment, type ReactNode } from "react";
 
@@ -14,9 +18,11 @@ function escapeRegex(s: string): string {
 
 function escapeHTML(s: string): string {
   return s
-    .replace(/&/g, "&")
-    .replace(/</g, "<")
-    .replace(/>/g, ">");
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 export function Highlight({
@@ -62,13 +68,35 @@ export function Highlight({
   );
 }
 
-// Use this when you DO need to render <mark> tags that came from the
-// server (ts_headline). It strips everything but <mark> tags first.
+/**
+ * sanitizeHeadline — defense-in-depth XSS wall for ts_headline output.
+ *
+ * Approach:
+ *   1. Strip control characters (U+0000..U+001F) except \t, \n, \r.
+ *      Postgres can emit \x00 in ts_headline output under weird inputs.
+ *   2. Strip ALL HTML tags except <mark> and </mark> via a strict
+ *      allowlist regex (case-insensitive, no attributes allowed).
+ *   3. Anything that survived step 2 (plain text + allowed marks) is
+ *      safe to feed to dangerouslySetInnerHTML — there are no
+ *      attributes, no script tags, no on* handlers.
+ */
 export function sanitizeHeadline(raw: string | null | undefined): string {
   if (!raw) return "";
-  // Defense-in-depth: HTML-escape, then re-allow ONLY <mark>/</mark>.
-  const escaped = escapeHTML(raw);
-  return escaped
-    .replace(/<mark>/g, "<mark>")
-    .replace(/<\/mark>/g, "</mark>");
+
+  // 1. Drop control chars (except common whitespace).
+  // eslint-disable-next-line no-control-regex
+  const noControl = raw.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, "");
+
+  // 2. Split into segments. Anything that isn't <mark>/</mark> is plain
+  //    text. We then HTML-escape the plain text and leave the marks
+  //    untouched. This is more robust than "escape then un-escape
+  //    <mark>" which can be defeated by weird quote/encoding tricks.
+  const segments = noControl.split(/(<mark>|<\/mark>)/gi);
+
+  return segments
+    .map((seg) => {
+      if (/^<\/?mark>$/i.test(seg)) return seg; // allowed tag, as-is
+      return escapeHTML(seg); // everything else → escaped text
+    })
+    .join("");
 }
