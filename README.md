@@ -1,6 +1,6 @@
 # Recruiter Application Search System
 
-> **Live demo:** _Vercel URL goes here after `vercel --prod` (see Phase 4 below)_
+> **Live demo:** https://recruiter-application-search-system.vercel.app
 > **Source repo:** https://github.com/raiyanibnekamal/recruiter-application-search-system
 > **Submission folder (Google Drive, viewer-access):** _paste link after upload — see Phase 8 below_
 > **Walkthrough video:** _paste YouTube/Drive link or `walkthrough.mp4` filename after recording — see Phase 7 below_
