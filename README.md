@@ -36,7 +36,7 @@ debounced input, and every UI state a hiring tool should have.
 | 404 page (`app/not-found.tsx`) | ✅ | live chunks |
 | RPC input caps (q ≤ 256, lim ≤ 100, off ≤ 1000) | ✅ | migrations hardened |
 | `sanitizeHeadline` XSS wall | ✅ rewrite | control-char strip + tag allowlist |
-| Magic link + password sign-in + sign-up | ✅ | live UI tabs |
+| Password + magic-link sign-in (sign-up gated — admin-provisioned only) | ✅ | live UI tabs |
 | ESLint config (`next/core-web-vitals`) | ✅ | `.eslintrc.json` |
 | OG / Twitter / theme-color / robots meta | ✅ | live HTML |
 | Seed rows | ✅ 66 varied rows | `select count(*)` = 66 |
@@ -68,7 +68,9 @@ Approach:
    in-memory edge rate limit (30 req / 10s / IP).
 5. **UX**: debounce + AbortController, URL sync, Cmd/Ctrl+K, focus on
    mount, stale-while-revalidate skeletons, fuzzy fallback, magic-link
-   *and* password sign-in (with sign-up).
+   *and* password sign-in. Self-serve sign-up is intentionally disabled —
+   accounts are provisioned by an admin in Supabase Auth → Users, so the
+   public surface cannot mint recruiter credentials.
 
 ---
 
@@ -188,7 +190,7 @@ gates the live screenshot.
 | State | File | Source |
 |---|---|---|
 | **Live site** (no auth) | [`assets/screenshots/00-live-login.png`](assets/screenshots/00-live-login.png) | Edge headless capture of `https://recruiter-application-search-system.vercel.app/login` |
-| Login (password + magic link tabs) | [`assets/screenshots/01-login.png`](assets/screenshots/01-login.png) | State mockup |
+| Login (password / magic-link tabs, admin-provisioned) | [`assets/screenshots/01-login.png`](assets/screenshots/01-login.png) | State mockup |
 | Search results with `<mark>` highlights | [`assets/screenshots/02-search-results.png`](assets/screenshots/02-search-results.png) | State mockup (matches actual UI; live capture requires a session) |
 | Empty state with fuzzy CTA | [`assets/screenshots/03-empty-state.png`](assets/screenshots/03-empty-state.png) | State mockup |
 | Loading skeleton | [`assets/screenshots/04-loading-skeleton.png`](assets/screenshots/04-loading-skeleton.png) | State mockup |

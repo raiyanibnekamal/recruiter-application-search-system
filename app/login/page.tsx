@@ -1,19 +1,26 @@
 "use client";
 
+// app/login/page.tsx
+//
+// Recruiter sign-in: password OR magic link. No self-serve sign-up —
+// accounts are provisioned by the admin (Supabase Auth → Users). That
+// keeps the auth surface tight: a public visitor cannot mint a row.
+//
+// `dynamic = "force-dynamic"` opts this route out of static prerender
+// at build time so the lazy Supabase client never runs without env
+// vars present.
+
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { createBrowserClient } from "@supabase/ssr";
 
-// Force dynamic: login is interactive and varies per visitor.
 export const dynamic = "force-dynamic";
 
 type Mode = "password" | "magic";
-type AuthKind = "signin" | "signup";
 
 export default function LoginPage() {
   const router = useRouter();
   const [mode, setMode] = useState<Mode>("password");
-  const [kind, setKind] = useState<AuthKind>("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -55,36 +62,14 @@ export default function LoginPage() {
         if (error) setError(error.message);
         else setInfo(`Magic link sent to ${email}. Check your inbox.`);
       } else {
-        if (kind === "signup") {
-          const siteUrl =
-            process.env.NEXT_PUBLIC_SITE_URL ?? window.location.origin;
-          const { error } = await supabase.auth.signUp({
-            email,
-            password,
-            options: { emailRedirectTo: `${siteUrl}${nextPath()}` },
-          });
-          if (error) {
-            setError(error.message);
-          } else {
-            setInfo(
-              "Account created. If your project requires email confirmation, check your inbox — otherwise you're signed in."
-            );
-            // Most demo projects have confirm-email disabled; in that
-            // case Supabase returns a session immediately and we can
-            // just route the user straight to /search.
-            const { data } = await supabase.auth.getSession();
-            if (data.session) router.replace(nextPath());
-          }
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (error) {
+          setError(error.message);
         } else {
-          const { error } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-          });
-          if (error) {
-            setError(error.message);
-          } else {
-            router.replace(nextPath());
-          }
+          router.replace(nextPath());
         }
       }
     } catch (err) {
@@ -106,7 +91,7 @@ export default function LoginPage() {
       <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
         <h1 className="text-2xl font-semibold text-ink">Recruiter sign-in</h1>
         <p className="mt-2 text-sm text-muted">
-          Access is gated by RLS — only authenticated recruiters can read
+          Access is gated by RLS &mdash; only authenticated recruiters can read
           applicant rows. Anonymous keys return{" "}
           <code className="rounded bg-slate-100 px-1">[]</code>.
         </p>
@@ -115,7 +100,11 @@ export default function LoginPage() {
         <div className="mt-6 inline-flex rounded-lg border border-slate-200 bg-slate-50 p-1 text-sm">
           <button
             type="button"
-            onClick={() => { setMode("password"); setError(null); setInfo(null); }}
+            onClick={() => {
+              setMode("password");
+              setError(null);
+              setInfo(null);
+            }}
             className={
               "rounded-md px-3 py-1.5 transition " +
               (mode === "password"
@@ -127,7 +116,11 @@ export default function LoginPage() {
           </button>
           <button
             type="button"
-            onClick={() => { setMode("magic"); setError(null); setInfo(null); }}
+            onClick={() => {
+              setMode("magic");
+              setError(null);
+              setInfo(null);
+            }}
             className={
               "rounded-md px-3 py-1.5 transition " +
               (mode === "magic"
@@ -139,36 +132,7 @@ export default function LoginPage() {
           </button>
         </div>
 
-        {/* Sign-in / sign-up toggle (password mode only) */}
-        {mode === "password" && (
-          <div className="mt-4 text-sm text-muted">
-            {kind === "signin" ? (
-              <>
-                New here?{" "}
-                <button
-                  type="button"
-                  onClick={() => { setKind("signup"); setError(null); setInfo(null); }}
-                  className="font-medium text-accent hover:underline"
-                >
-                  Create an account
-                </button>
-              </>
-            ) : (
-              <>
-                Already have an account?{" "}
-                <button
-                  type="button"
-                  onClick={() => { setKind("signin"); setError(null); setInfo(null); }}
-                  className="font-medium text-accent hover:underline"
-                >
-                  Sign in instead
-                </button>
-              </>
-            )}
-          </div>
-        )}
-
-        <form onSubmit={onSubmit} className="mt-4 space-y-3">
+        <form onSubmit={onSubmit} className="mt-6 space-y-3">
           <label className="block text-sm font-medium text-ink" htmlFor="email">
             Work email
           </label>
@@ -224,15 +188,13 @@ export default function LoginPage() {
               ? "Working…"
               : mode === "magic"
               ? "Send magic link"
-              : kind === "signup"
-              ? "Create account"
               : "Sign in"}
           </button>
         </form>
 
         <p className="mt-6 text-center text-xs text-muted">
-          By signing in you confirm you&rsquo;re authorised to view applicant
-          data under your organisation&rsquo;s policy.
+          Accounts are provisioned by your administrator. If you need access,
+          ask the team to create one in Supabase Auth → Users.
         </p>
       </div>
     </main>
