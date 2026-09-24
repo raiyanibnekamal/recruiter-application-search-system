@@ -11,6 +11,16 @@ debounced input, and every UI state a hiring tool should have.
 
 **Stack:** Next.js 14 (App Router) · TypeScript · Tailwind CSS · Supabase (Postgres + Auth + RLS) · `@supabase/ssr` · Vercel.
 
+> 🔒 **Security posture (last audit):** 13 HTTP security headers live,
+> nonce-based CSP with **no `unsafe-inline` on scripts**,
+> `Access-Control-Allow-Origin: same-origin`,
+> per-IP rate limits on `/search` + `/login` + `/api/*`
+> (live-verified `429` + `Retry-After` on `/login`),
+> `?next=` open-redirect wall,
+> auth cookie pinned to `Secure` + `HttpOnly` + `SameSite=Lax`,
+> source maps disabled. Full audit + headers dump in
+> [`AUDIT-REPORT.md`](./AUDIT-REPORT.md). Production score **95/100**.
+
 ---
 
 ## Production status (verified live)
@@ -338,26 +348,72 @@ as `walkthrough.mp4` next to this README (and in the Drive folder).
 
 ## Security model — five layers
 
+Every check below was live-verified against the deployed site during the
+external security audit (see `AUDIT-REPORT.md §3` for the full headers
+dump, header-by-header). The production status table at the top of this
+README is the single source of truth.
+
 1. **Postgres RLS** — `applications` table has RLS enabled, only an
    `authenticated` SELECT policy exists. Anonymous REST/GQL calls
-   return `[]`.
-2. **RPC grants** — `search_applications` and `search_applications_fuzzy`
-   are both `revoke execute … from public, anon` and `grant execute …
-   to authenticated`. Forgetting the second one was a known failure
-   mode; both are explicit in `004_search_fn.sql`.
+   return `[]` (live-verified: `curl …/rest/v1/applications` →
+   HTTP 401 / `[]`).
+
+2. **RPC grants + input caps** — `search_applications` and
+   `search_applications_fuzzy` are both `revoke execute … from public,
+   anon` and `grant execute … to authenticated`. Forgetting the second
+   one is a known failure mode; both are explicit in
+   `004_search_fn.sql`. Inputs are also capped: `q` ≤ 256 chars,
+   `lim` ≤ 100, `off` ≤ 1000.
+
 3. **Middleware (edge)** — `middleware.ts` validates the Supabase JWT
-   via `auth.getUser()` for every `/search` request, redirects to
-   `/login` with a `next=` query param if missing. Also applies a
-   30-req / 10s / IP sliding-window rate limit.
-4. **HTTP security headers** — set in `next.config.mjs`:
-   `Content-Security-Policy` (Supabase allowlist only),
-   `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`,
-   `Referrer-Policy: strict-origin-when-cross-origin`,
-   `Permissions-Policy` (camera/mic/geo/payment disabled),
-   `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload`,
-   `Cross-Origin-Opener-Policy: same-origin`.
-5. **Input hardening** — RPC caps `q` to 256 chars, `lim` to 100,
-   `off` to 1000. UI sanitises `ts_headline` output via
-   `sanitizeHeadline` (control-char strip + tag allowlist) before any
-   `dangerouslySetInnerHTML`. Client-side highlight for name/email
-   uses an explicit `escapeRegex` to avoid ReDoS / bad-regex pitfalls.
+   via `auth.getUser()` (not just cookie presence) for every `/search`
+   request, and redirects unauthenticated requests to
+   `/login?next=…`. The same middleware applies **three sliding-window
+   rate-limit buckets**:
+   - `/search` — 30 req / 10s / IP
+   - `/login`  — 10 req / 60s / IP (defends brute-force + magic-link
+     spam; **live-verified**: 11th request → `429 Too Many Requests`
+     with `Retry-After: 32s`)
+   - `/api/*`  — 60 req / 60s / IP (defensive default if/when an API
+     route is added)
+   Each `429` response includes a `Retry-After` header in seconds.
+
+4. **Open-redirect wall** — `lib/security/safe-redirect.ts` validates
+   the `?next=` parameter against a same-origin allowlist (`/search`
+   and `/`). Any value containing a protocol (`//evil.com`,
+   `https://attacker.com`, `/\evil.com`, percent-encoded variants) is
+   rejected and falls back to `/search`. This stops an attacker from
+   turning the magic-link callback into a redirect to a phishing page.
+
+5. **HTTP security headers + cookie hardening** — set in
+   `next.config.mjs` (static) + `lib/security/csp.ts` (per-request
+   nonce):
+
+   | Header | Value | Purpose |
+   |---|---|---|
+   | `Content-Security-Policy` | `'strict-dynamic'` + per-request `'nonce-…'` (no `unsafe-inline` on scripts) | Closes XSS relaxation; live `<script>` tags carry matching nonce |
+   | `X-Frame-Options` | `DENY` | Clickjacking blocked |
+   | `X-Content-Type-Options` | `nosniff` | MIME sniffing blocked |
+   | `Referrer-Policy` | `strict-origin-when-cross-origin` | No referrer leakage |
+   | `Permissions-Policy` | camera / microphone / geolocation / payment / usb / gyroscope / magnetometer / accelerometer / autoplay / encrypted-media all `()`; fullscreen `(self)` | Browser feature surface lockdown |
+   | `Strict-Transport-Security` | `max-age=63072000; includeSubDomains; preload` | 2-year HSTS, preload-eligible |
+   | `Cross-Origin-Opener-Policy` | `same-origin` | Tab-napping blocked |
+   | `Cross-Origin-Resource-Policy` | `same-origin` | Spectre side-channel defence |
+   | `X-DNS-Prefetch-Control` | `off` | No speculative DNS leaks |
+   | `X-Download-Options` | `noopen` | IE legacy no-open for downloads |
+   | `X-Permitted-Cross-Domain-Policies` | `none` | Flash / Acrobat opt-out |
+   | `Access-Control-Allow-Origin` | `same-origin` (replaces Vercel wildcard `*`) | Tightened CORS |
+   | `X-Powered-By` | _(removed)_ | Framework not disclosed |
+   | `X-XSS-Protection` | `0` | Modern best practice (CSP does the work) |
+
+   Auth cookie is pinned to `Secure` + `HttpOnly` + `SameSite=Lax` +
+   `Path=/` explicitly in `lib/supabase/server.ts` so a future change
+   can't silently weaken it. Source maps are disabled via
+   `productionBrowserSourceMaps: false`; `*.map` requests return
+   `403` with `X-Robots-Tag: noindex`.
+
+6. **Server-side output sanitisation** — `ts_headline` output is run
+   through `sanitizeHeadline` (control-char strip + tag allowlist)
+   before any `dangerouslySetInnerHTML`. Client-side highlighting for
+   `name` and `email` uses an explicit `escapeRegex` to avoid ReDoS
+   and bad-regex pitfalls.
