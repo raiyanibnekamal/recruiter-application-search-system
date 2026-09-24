@@ -1,0 +1,41 @@
+-- Capture this output by running bench.sql AFTER re-creating the
+-- indexes from 002_indexes.sql (or on a fresh seeded database).
+
+-- Sample captured output (illustrative; replace with your real run):
+
+-- QUERY (a): websearch_to_tsquery('postgres developer')
+--   Limit  (cost=40.50..40.55 rows=20) (actual time=0.072..0.092 rows=20 loops=1)
+--     ->  Index Scan using applications_search_gin on applications
+--           (actual time=0.069..0.087 rows=20 loops=1)
+--           Index Cond: (search_vector @@ websearch_to_tsquery('english', 'postgres developer'::text))
+--   Planning Time: 0.142 ms
+--   Execution Time: 0.118 ms
+--
+-- QUERY (b) enable_seqscan=off (same logical plan, planner-confirmed):
+--   Limit  (cost=28.00..28.04 rows=20) (actual time=0.061..0.078 rows=20 loops=1)
+--     ->  Bitmap Heap Scan on applications  (actual time=0.058..0.075 rows=20 loops=1)
+--           Recheck Cond: (search_vector @@ websearch_to_tsquery('english', 'postgres developer'::text))
+--           ->  Bitmap Index Scan on applications_search_gin
+--                 (actual time=0.034..0.034 rows=20 loops=1)
+--   Execution Time: 0.092 ms
+--
+-- QUERY (c) name ILIKE '%sadia%':
+--   Limit  (cost=40.00..40.04 rows=20) (actual time=0.041..0.061 rows=20 loops=1)
+--     ->  Bitmap Heap Scan on applications  (actual time=0.038..0.058 rows=20 loops=1)
+--           Filter: (name ~~ '%sadia%'::text)
+--           Rows Removed by Filter: 4
+--           ->  Bitmap Index Scan on applications_name_trgm
+--                 (actual time=0.030..0.030 rows=5 loops=1)
+--   Execution Time: 0.078 ms
+--
+-- QUERY (d) name ILIKE '%a%':
+--   Limit  (cost=1000.00..1000.04 rows=20) (actual time=312.402..312.420 rows=20 loops=1)
+--     ->  Gather  (cost=1000.00..28400.00 rows=20 width=22)
+--           Workers Planned: 2
+--           ->  Parallel Seq Scan on applications
+--                 (actual time=0.030..298.118 rows=10 loops=2)
+--                 Filter: (name ~~ '%a%'::text)
+--                 Rows Removed by Filter: 99990
+--   Execution Time: 312.4 ms
+
+-- (Replace this file with the verbatim psql output of your run.)

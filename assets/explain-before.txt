@@ -1,0 +1,47 @@
+-- Capture this output by running bench.sql AFTER dropping the
+-- indexes from 002_indexes.sql. Keep the same EXPLAIN queries so
+-- the before/after numbers are comparable.
+
+-- DROP INDEX public.applications_search_gin;
+-- DROP INDEX public.applications_name_trgm;
+-- DROP INDEX public.applications_email_trgm;
+-- (applications_status_created_idx is irrelevant for these queries.)
+
+-- Sample captured output (illustrative; replace with your real run):
+
+-- QUERY (a): websearch_to_tsquery('postgres developer')
+--   Limit  (cost=... rows=20) (actual time=412.118..412.121 rows=20 loops=1)
+--     ->  Gather  (cost=... rows=20) (actual ... rows=20)
+--           Workers Planned: 2
+--           ->  Parallel Seq Scan on applications
+--                 (actual time=0.025..380.214 rows=10 loops=2)
+--                 Filter: (search_vector @@ websearch_to_tsquery(...))
+--                 Rows Removed by Filter: 99990
+--   Planning Time: 0.412 ms
+--   Execution Time: 412.7 ms
+--
+-- QUERY (b) enable_seqscan=off:
+--   Limit  (cost=... rows=20) (actual time=...
+--     ->  Bitmap Heap Scan on applications  (actual ...
+--           Recheck Cond: (search_vector @@ ...)
+--           ->  Bitmap Index Scan on applications_search_gin
+--                 (actual ...
+--   Execution Time: 1.9 ms
+--
+-- QUERY (c) name ILIKE '%sadia%':
+--   Limit  (cost=... rows=20) (actual time=...
+--     ->  Gather
+--           ->  Parallel Seq Scan on applications
+--                 Filter: (name ~~ '%sadia%')
+--                 Rows Removed by Filter: ...
+--   Execution Time: 380.4 ms
+--
+-- QUERY (d) name ILIKE '%a%':
+--   Limit  (cost=... rows=20) (actual time=...
+--     ->  Gather
+--           ->  Parallel Seq Scan on applications
+--                 Filter: (name ~~ '%a%')
+--                 Rows Removed by Filter: ...
+--   Execution Time: 390.2 ms
+
+-- (Replace this file with the verbatim psql output of your run.)
