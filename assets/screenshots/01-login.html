@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<!--
+  Screenshot helper: open this file in any browser and press Win+Shift+S
+  to capture. Saves you from having to log in just to grab a state shot.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Screenshot: Login</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body { background: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
+  .accent { background-color: #4f46e5; }
+  .ink { color: #0b0d12; }
+  .muted { color: #5b6473; }
+</style>
+</head>
+<body class="min-h-screen flex items-center justify-center px-6">
+  <div class="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm w-full max-w-md">
+    <h1 class="text-2xl font-semibold ink">Recruiter sign-in</h1>
+    <p class="mt-2 text-sm muted">
+      Access is gated by RLS &mdash; only authenticated recruiters can read applicant rows.
+      Anonymous keys return <code class="rounded bg-slate-100 px-1">[]</code>.
+    </p>
+
+    <div class="mt-6 inline-flex rounded-lg border border-slate-200 bg-slate-50 p-1 text-sm">
+      <button class="rounded-md px-3 py-1.5 bg-white text-ink shadow">Password</button>
+      <button class="rounded-md px-3 py-1.5 muted hover:text-ink">Magic link</button>
+    </div>
+
+    <div class="mt-4 text-sm muted">
+      New here? <a class="font-medium text-[#4f46e5]">Create an account</a>
+    </div>
+
+    <form class="mt-4 space-y-3">
+      <label class="block text-sm font-medium ink">Work email</label>
+      <input type="email" value="demo@recruiter.test" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-base" />
+      <label class="block text-sm font-medium ink">Password</label>
+      <input type="password" value="Demo123!" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-base" />
+      <button class="w-full accent rounded-lg px-4 py-2 text-sm font-medium text-white">Sign in</button>
+    </form>
+  </div>
+</body>
+</html>

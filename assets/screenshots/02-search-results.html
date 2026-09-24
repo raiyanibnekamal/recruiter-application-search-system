@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Screenshot: Search Results</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body { background: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
+  .ink { color: #0b0d12; }
+  .muted { color: #5b6473; }
+  .accent { color: #4f46e5; }
+  mark { background: #fde68a; border-radius: 4px; padding: 0 2px; color: #0b0d12; }
+</style>
+</head>
+<body class="px-4 py-10">
+<div class="mx-auto max-w-3xl">
+  <div class="mb-6 flex items-center justify-between">
+    <h1 class="text-xl font-semibold ink">Applications Search</h1>
+    <a class="text-sm muted underline-offset-2 hover:underline">Sign out</a>
+  </div>
+
+  <div class="relative w-full">
+    <input value="sadia" class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-base ink shadow-sm" />
+  </div>
+
+  <div class="mt-3 flex items-center justify-between text-sm muted">
+    <span>Showing 2 of 2</span>
+    <span>Debounced 300 ms &middot; min 2 chars</span>
+  </div>
+
+  <ul class="mt-4 rounded-xl border border-slate-100">
+    <li class="cursor-pointer border-b border-slate-100 px-2 py-3 bg-[#4f46e5]/5">
+      <div class="flex items-baseline justify-between gap-3">
+        <div class="font-medium ink"><mark>Sadia</mark> Rahman</div>
+        <span class="rounded-full bg-emerald-50 text-emerald-700 px-2 py-0.5 text-xs">fulltext</span>
+      </div>
+      <div class="mt-0.5 text-sm muted">sadia.rahman@example.com</div>
+      <div class="prose prose-sm mt-2 max-w-none text-sm text-slate-700">
+        Returned candidate from 2024 cohort; re-applied for <mark>sadia</mark> senior role.
+      </div>
+    </li>
+    <li class="cursor-pointer border-b border-slate-100 px-2 py-3">
+      <div class="flex items-baseline justify-between gap-3">
+        <div class="font-medium ink"><mark>Sadia</mark> Rahman</div>
+        <span class="rounded-full bg-amber-50 text-amber-700 px-2 py-0.5 text-xs">substring</span>
+      </div>
+      <div class="mt-0.5 text-sm muted">sadia.rahman+second@example.com</div>
+    </li>
+  </ul>
+</div>
+</body>
+</html>

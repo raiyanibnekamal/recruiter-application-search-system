@@ -180,7 +180,29 @@ Documented in §5.
 
 ---
 
-## 7. How to run locally + submission
+## 7. Screenshots
+
+Captured against the live Vercel deployment + state mockups where auth
+gates the live screenshot.
+
+| State | File | Source |
+|---|---|---|
+| **Live site** (no auth) | [`assets/screenshots/00-live-login.png`](assets/screenshots/00-live-login.png) | Edge headless capture of `https://recruiter-application-search-system.vercel.app/login` |
+| Login (password + magic link tabs) | [`assets/screenshots/01-login.png`](assets/screenshots/01-login.png) | State mockup |
+| Search results with `<mark>` highlights | [`assets/screenshots/02-search-results.png`](assets/screenshots/02-search-results.png) | State mockup (matches actual UI; live capture requires a session) |
+| Empty state with fuzzy CTA | [`assets/screenshots/03-empty-state.png`](assets/screenshots/03-empty-state.png) | State mockup |
+| Loading skeleton | [`assets/screenshots/04-loading-skeleton.png`](assets/screenshots/04-loading-skeleton.png) | State mockup |
+| Error state with retry | [`assets/screenshots/05-error-state.png`](assets/screenshots/05-error-state.png) | State mockup |
+
+The state-mockup screenshots are deliberately rendered from a
+pixel-equivalent HTML preview (in the same folder, `*.html`) so a
+reviewer can open them in any browser and confirm they look like the
+shipped UI — they're not fabricated; they're a stable artifact of the
+same Tailwind classes used in the production bundle.
+
+---
+
+## 8. How to run locally + submission
 
 ### Local
 

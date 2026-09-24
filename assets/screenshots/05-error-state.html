@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Screenshot: Error State with Retry</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body { background: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
+  .ink { color: #0b0d12; }
+  .muted { color: #5b6473; }
+</style>
+</head>
+<body class="px-4 py-10">
+<div class="mx-auto max-w-3xl">
+  <div class="mb-6 flex items-center justify-between">
+    <h1 class="text-xl font-semibold ink">Applications Search</h1>
+    <a class="text-sm muted">Sign out</a>
+  </div>
+
+  <input value="force-error" class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-base ink shadow-sm" />
+
+  <div class="mt-3 flex items-center justify-between text-sm muted">
+    <span>Error</span>
+  </div>
+
+  <div class="mx-auto mt-6 max-w-md rounded-2xl border border-rose-200 bg-rose-50 px-6 py-8 text-center">
+    <h3 class="text-base font-semibold text-rose-700">Search failed</h3>
+    <p class="mt-1 text-sm text-rose-600">Network error: Unable to reach search service. Please try again.</p>
+    <button class="mt-3 rounded-lg border border-rose-300 bg-white px-3 py-1.5 text-sm font-medium text-rose-700">Retry</button>
+  </div>
+</div>
+</body>
+</html>

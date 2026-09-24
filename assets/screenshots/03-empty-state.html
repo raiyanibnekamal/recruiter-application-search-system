@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Screenshot: Empty State with Fuzzy CTA</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body { background: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
+  .ink { color: #0b0d12; }
+  .muted { color: #5b6473; }
+</style>
+</head>
+<body class="px-4 py-10">
+<div class="mx-auto max-w-3xl">
+  <div class="mb-6 flex items-center justify-between">
+    <h1 class="text-xl font-semibold ink">Applications Search</h1>
+    <a class="text-sm muted">Sign out</a>
+  </div>
+
+  <input value="zzzz" class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-base ink shadow-sm" />
+
+  <div class="mt-3 flex items-center justify-between text-sm muted">
+    <span>No results</span>
+    <span>Debounced 300 ms &middot; min 2 chars</span>
+  </div>
+
+  <div class="mx-auto mt-6 max-w-md rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-6 py-10 text-center">
+    <h3 class="text-lg font-semibold ink">No matches for &ldquo;zzzz&rdquo;</h3>
+    <p class="mt-2 text-sm muted">
+      Try a different spelling, fewer words, or fall back to a fuzzy search that
+      tolerates typos.
+    </p>
+    <button class="mt-4 inline-flex items-center gap-2 rounded-lg bg-[#4f46e5] px-4 py-2 text-sm font-medium text-white shadow-sm">
+      Try fuzzy search
+    </button>
+  </div>
+</div>
+</body>
+</html>
