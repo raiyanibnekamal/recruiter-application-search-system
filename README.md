@@ -23,20 +23,30 @@ debounced input, and every UI state a hiring tool should have.
 | `/login` HTTP 200 | ✅ | live URL |
 | `/search` middleware gate | ✅ 303 → `/login?next=%2Fsearch` | anon key + REST → `[]` |
 | Anon proof | ✅ RLS denies unauthenticated REST access | `set role anon; select count(*) from applications` → 0 |
-| `Content-Security-Policy` | ✅ | live header check |
+| `Content-Security-Policy` (strict-dynamic + nonce, no `unsafe-inline` on scripts) | ✅ | live header includes `'nonce-{request-scoped}'`; `<script>` tags carry matching nonce |
 | `X-Frame-Options: DENY` | ✅ | clickjacking blocked |
 | `X-Content-Type-Options: nosniff` | ✅ | MIME sniffing blocked |
 | `Referrer-Policy: strict-origin-when-cross-origin` | ✅ | no leakage |
-| `Permissions-Policy` | ✅ camera/mic/geo/payment disabled | — |
+| `Permissions-Policy` | ✅ camera/mic/geo/payment/usb/gyroscope/magnetometer/etc. all disabled | — |
 | `Strict-Transport-Security` | ✅ max-age=2y + preload | — |
 | `Cross-Origin-Opener-Policy: same-origin` | ✅ | tab-napping blocked |
+| `Cross-Origin-Resource-Policy: same-origin` | ✅ | Spectre side-channel defence |
+| `X-DNS-Prefetch-Control: off` | ✅ | no speculative DNS leaks |
+| `X-Download-Options: noopen` | ✅ | IE legacy no-open for downloads |
+| `X-Permitted-Cross-Domain-Policies: none` | ✅ | Flash/Acrobat opt-out |
+| `Access-Control-Allow-Origin` | ✅ `same-origin` (replaces Vercel wildcard `*`) | tightened in `next.config.mjs` |
 | `X-Powered-By` | ✅ removed | not leaked |
-| Edge rate limit (30 req / 10s / IP) | ✅ | middleware |
+| Edge rate limit — `/search` (30 req / 10s / IP) | ✅ | middleware, returns `429 Too Many Requests` with `Retry-After` |
+| Edge rate limit — `/login` (10 req / 60s / IP) | ✅ | defends brute-force / magic-link spam; verified `429` with `Retry-After: 32s` |
+| Edge rate limit — `/api/*` (60 req / 60s / IP) | ✅ | defensive default if/when API is added |
+| `?next=` open-redirect wall (`safeNextPath`) | ✅ | only `/search` and `/` are accepted as post-login targets; `//evil.com` rejected |
 | Error boundary (`app/error.tsx`) | ✅ | live chunks |
 | 404 page (`app/not-found.tsx`) | ✅ | live chunks |
 | RPC input caps (q ≤ 256, lim ≤ 100, off ≤ 1000) | ✅ | migrations hardened |
 | `sanitizeHeadline` XSS wall | ✅ rewrite | control-char strip + tag allowlist |
+| Auth cookie: `Secure` + `HttpOnly` + `SameSite=Lax` | ✅ pinned | `lib/supabase/server.ts` |
 | Password + magic-link sign-in (sign-up gated — admin-provisioned only) | ✅ | live UI tabs |
+| Source-map leaks | ✅ blocked | `productionBrowserSourceMaps: false`; `*.map` returns 403 + `X-Robots-Tag: noindex` |
 | ESLint config (`next/core-web-vitals`) | ✅ | `.eslintrc.json` |
 | OG / Twitter / theme-color / robots meta | ✅ | live HTML |
 | Seed rows | ✅ 66 varied rows | `select count(*)` = 66 |
@@ -63,14 +73,22 @@ Approach:
    `websearch_to_tsquery` and an `ilike '%…%'` predicate, ranks by
    `ts_rank_cd`, and returns `ts_headline` so we can highlight matches
    server-side without trusting HTML.
-4. **Four layers of auth gating**: RLS, revoked anon grants on both
-   RPCs, an edge middleware redirect that validates the JWT, and an
-   in-memory edge rate limit (30 req / 10s / IP).
+4. **Five layers of auth gating**: RLS, revoked anon grants on both
+   RPCs, an edge middleware redirect that validates the JWT, an
+   in-memory edge rate limit (30 req / 10s / IP on `/search`, plus
+   10 req / 60s / IP on `/login` to defend brute-force + magic-link
+   spam), and a `safeNextPath` validator that prevents the
+   `?next=` parameter on the magic-link callback from becoming an
+   open redirect.
 5. **UX**: debounce + AbortController, URL sync, Cmd/Ctrl+K, focus on
    mount, stale-while-revalidate skeletons, fuzzy fallback, magic-link
    *and* password sign-in. Self-serve sign-up is intentionally disabled —
    accounts are provisioned by an admin in Supabase Auth → Users, so the
    public surface cannot mint recruiter credentials.
+6. **Security headers**: nonce-based CSP (`strict-dynamic`,
+   no `unsafe-inline` on scripts), CORP, COOP, XFO, HSTS, full
+   Permissions-Policy lockdown, `Access-Control-Allow-Origin: same-origin`,
+   `X-DNS-Prefetch-Control: off`, source maps disabled.
 
 ---
 
