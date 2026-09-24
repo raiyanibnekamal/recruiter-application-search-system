@@ -13,6 +13,7 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { createBrowserClient } from "@supabase/ssr";
+import { safeNextPath } from "@/lib/security/safe-redirect";
 
 export const dynamic = "force-dynamic";
 
@@ -38,9 +39,10 @@ export default function LoginPage() {
     return createBrowserClient(url, key);
   }
 
-  function nextPath() {
+  function nextPath(): string {
     if (typeof window === "undefined") return "/search";
-    return new URL(window.location.href).searchParams.get("next") ?? "/search";
+    const raw = new URL(window.location.href).searchParams.get("next");
+    return safeNextPath(raw);
   }
 
   async function onSubmit(e: FormEvent) {
